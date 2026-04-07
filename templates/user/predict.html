@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glucose Prediction - Diabetes Glycemic Control</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 18px;
+        }
+        .predict-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            margin-bottom: 40px;
+        }
+        .predict-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0;
+        }
+        .predict-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 20px 40px 20px;
+        }
+        .form-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        .form-section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .form-group {
+            margin-bottom: 18px;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            display: block;
+            font-size: 14px;
+        }
+        .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px 15px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .form-help-text {
+            color: #999;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .alert {
+            border-radius: 8px;
+            border: none;
+            margin-bottom: 20px;
+        }
+        .form-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .section-icon {
+            font-size: 20px;
+            margin-right: 10px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        .reset-btn {
+            width: 100%;
+            padding: 13px;
+            background: #f0f0f0;
+            color: #333;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        .reset-btn:hover {
+            background: #ddd;
+        }
+        .info-box {
+            background: linear-gradient(135deg, #e0f7ff 0%, #f0f9ff 100%);
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .info-box p {
+            margin: 0;
+            color: #156fc5;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('auth.dashboard') }}">💉 Glucose Monitor</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('user.predict') }}">New Prediction</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reporting.multi_user_report') }}">Trend Analysis</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.profile') }}">Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Header -->
+    <div class="predict-header">
+        <div class="predict-container">
+            <h1>🩺 Glucose Prediction</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Enter your health data to predict your glucose level</p>
+        </div>
+    </div>
+    
+    <div class="predict-container">
+        <!-- Information Box -->
+        <div class="info-box">
+            <p>📋 <strong>All fields are required.</strong> Ensure you enter accurate health measurements for the best prediction results.</p>
+        </div>
+        
+        <!-- Error Display -->
+        {% if error %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>⚠️ Validation Error:</strong> {{ error }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+        
+        <!-- Prediction Form -->
+        <div class="form-card">
+            <h2 class="form-section-title">📝 Health Data</h2>
+            
+            <form method="POST" id="predictionForm">
+                <!-- Age Section -->
+                <div class="form-section">
+                    <span class="section-icon">👨</span>
+                    <span style="font-weight: 600; color: #333;">Age & Demographics</span>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Age (years) <span style="color: #dc3545;">*</span></label>
+                    <input type="number" class="form-control" id="age" name="age" min="1" max="120" required placeholder="45">
+                    <div class="form-help-text">✓ Valid range: 1-120 years</div>
+                </div>
+                
+                <!-- Biometric Measurements -->
+                <div class="form-section">
+                    <span class="section-icon">⚖️</span>
+                    <span style="font-weight: 600; color: #333;">Biometric Measurements</span>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">BMI (kg/m²) <span style="color: #dc3545;">*</span></label>
+                    <input type="number" step="0.1" class="form-control" id="bmi" name="bmi" min="10" max="70" required placeholder="25.5">
+                    <div class="form-help-text">✓ Valid range: 10-70 kg/m² (Use: Weight(kg) / Height²(m²))</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Blood Pressure - Systolic (mmHg) <span style="color: #dc3545;">*</span></label>
+                    <input type="number" class="form-control" id="blood_pressure" name="blood_pressure" min="60" max="250" required placeholder="120">
+                    <div class="form-help-text">✓ Valid range: 60-250 mmHg (Upper number in BP reading)</div>
+                </div>
+                
+                <!-- Medication -->
+                <div class="form-section">
+                    <span class="section-icon">💊</span>
+                    <span style="font-weight: 600; color: #333;">Medication & Treatment</span>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Insulin Intake (units) <span style="color: #dc3545;">*</span></label>
+                    <input type="number" step="0.1" class="form-control" id="insulin_intake" name="insulin_intake" min="0" max="300" required placeholder="20.5">
+                    <div class="form-help-text">✓ Valid range: 0-300 units (Daily insulin dose)</div>
+                </div>
+                
+                <!-- Diabetes Status -->
+                <div class="form-section">
+                    <span class="section-icon">🏥</span>
+                    <span style="font-weight: 600; color: #333;">Diabetes Status</span>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Diabetes Status <span style="color: #dc3545;">*</span></label>
+                    <select class="form-control" id="diabetes_status" name="diabetes_status" required>
+                        <option value="">-- Select Diabetes Status --</option>
+                        <option value="0">Non-Diabetic</option>
+                        <option value="1">Diabetic</option>
+                    </select>
+                    <div class="form-help-text">✓ Select appropriate status for accurate prediction</div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 30px;">
+                    <button type="submit" class="submit-btn">
+                        ➡️ Predict Glucose Level
+                    </button>
+                    <button type="reset" class="reset-btn">
+                        🔄 Clear Form
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Quick Reference -->
+        <div class="form-card" style="background: #f8f9fa; border: 2px solid #e9ecef;">
+            <h2 class="form-section-title" style="border-color: #e9ecef;">📚 Reference Ranges</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 13px;">
+                <div>
+                    <strong style="color: #333;">Age:</strong> 1-120 years
+                </div>
+                <div>
+                    <strong style="color: #333;">BMI:</strong> 10-70 kg/m²
+                </div>
+                <div>
+                    <strong style="color: #333;">Blood Pressure:</strong> 60-250 mmHg
+                </div>
+                <div>
+                    <strong style="color: #333;">Insulin:</strong> 0-300 units
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="text-align: center; margin-top: 30px; margin-bottom: 30px; color: #999; font-size: 12px;">
+            <p>💡 <strong>Disclaimer:</strong> This system is for educational and monitoring purposes only. Always consult with healthcare professionals for medical decisions.</p>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

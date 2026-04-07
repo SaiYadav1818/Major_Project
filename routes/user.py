@@ -1,41 +1,24 @@
-from flask import Blueprint, request, render_template, redirect, url_for, flash
+from flask import Blueprint, request, render_template, redirect, url_for, session
 from models.ai_model import glucose_predictor
 from models.recommendation import recommendation_engine
 from models.alert import alert_system
+from models.patient import patient_manager
 import plotly.graph_objects as go
 import plotly.io as pio
 import datetime
-import sqlite3
 import os
 
 user_bp = Blueprint('user', __name__)
 
-# Database setup
-DB_PATH = 'glucose_predictions.db'
-
-def init_db():
-    """Initialize SQLite database for storing predictions"""
-    if not os.path.exists(DB_PATH):
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute('''
-            CREATE TABLE predictions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                age REAL,
-                bmi REAL,
-                insulin_intake REAL,
-                blood_pressure REAL,
-                diabetes_status INTEGER,
-                predicted_glucose REAL,
-                clinical_status TEXT,
-                risk_level TEXT
-            )
-        ''')
-        conn.commit()
-        conn.close()
-
-init_db()
+def login_required(f):
+    """Decorator to require login"""
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'patient_id' not in session:
+            return redirect(url_for('auth.login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Clinical value ranges (mg/dL, and other units)
 CLINICAL_RANGES = {
@@ -82,29 +65,21 @@ def validate_input(age, bmi, insulin_intake, blood_pressure, diabetes_status):
     
     return True, None
 
-def save_prediction(age, bmi, insulin_intake, blood_pressure, diabetes_status, predicted_glucose, clinical_status, risk_level):
-    """Save prediction to database"""
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute('''
-            INSERT INTO predictions 
-            (age, bmi, insulin_intake, blood_pressure, diabetes_status, predicted_glucose, clinical_status, risk_level)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (age, bmi, insulin_intake, blood_pressure, diabetes_status, predicted_glucose, clinical_status, risk_level))
-        conn.commit()
-        conn.close()
-        return True
-    except Exception as e:
-        print(f"Database error: {e}")
-        return False
 
 # Global list to store previous glucose predictions
 previous_glucose_data = []
 
-@user_bp.route('/', methods=['GET', 'POST'])
-def index():
+# Global list to store previous glucose predictions
+previous_glucose_data = []
+
+@user_bp.route('/predict', methods=['GET', 'POST'])
+@login_required
+def predict():
+    """Predict glucose level for logged-in patient"""
+    patient_id = session.get('patient_id')
+    patient_name = session.get('patient_name')
     error_message = None
+    warning_message = None
     
     if request.method == 'POST':
         try:
@@ -115,11 +90,27 @@ def index():
             blood_pressure = request.form.get('blood_pressure', '').strip()
             diabetes_status = request.form.get('diabetes_status', '').strip()
             
-            # Validate inputs
+            # Import age validation function
+            from models.patient import validate_age
+            
+            # Get patient's registered date of birth
+            patient_info = patient_manager.get_patient_info(patient_id)
+            if not patient_info:
+                error_message = "❌ Could not retrieve your patient information"
+                return render_template('user/predict.html', error=error_message, patient_name=patient_name)
+            
+            # Validate age against DOB
+            age_valid, calculated_age, age_error = validate_age(patient_info.get('date_of_birth'), age)
+            
+            if not age_valid:
+                error_message = f"❌ Age Validation Failed: {age_error}"
+                return render_template('user/predict.html', error=error_message, patient_name=patient_name)
+            
+            # Validate other inputs
             is_valid, error_message = validate_input(age, bmi, insulin_intake, blood_pressure, diabetes_status)
             
             if not is_valid:
-                return render_template('index.html', error=error_message)
+                return render_template('user/predict.html', error=error_message, patient_name=patient_name)
             
             # Convert to appropriate types after validation
             age = float(age)
@@ -157,11 +148,15 @@ def index():
                 for feature, importance in feature_importance.items()
             } if feature_importance else {}
             
-            # Save prediction to database
-            save_prediction(age, bmi, insulin_intake, blood_pressure, diabetes_status, 
-                          predicted_glucose, clinical_assessment['status'], clinical_assessment['risk_level'])
+            # Save prediction to PATIENT database
+            patient_manager.save_patient_prediction(
+                patient_id, age, bmi, insulin_intake, blood_pressure, 
+                diabetes_status, predicted_glucose, clinical_assessment['status'], 
+                clinical_assessment['risk_level']
+            )
 
-            return render_template('results.html',
+            return render_template('user/results.html',
+                                 patient_name=patient_name,
                                  predicted_glucose=round(predicted_glucose, 1),
                                  clinical_status=clinical_assessment['status'],
                                  clinical_recommendation=clinical_assessment['clinical_recommendation'],
@@ -179,10 +174,7 @@ def index():
         
         except Exception as e:
             error_message = f"An unexpected error occurred: {str(e)}. Please try again."
-            return render_template('index.html', error=error_message)
+            return render_template('user/predict.html', error=error_message, patient_name=patient_name)
 
-    return render_template('index.html', error=error_message)
+    return render_template('user/predict.html', error=error_message, patient_name=patient_name)
 
-@user_bp.route('/results')
-def results():
-    return render_template('results.html')

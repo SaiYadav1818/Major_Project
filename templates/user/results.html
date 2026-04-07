@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction Results - Diabetes Glycemic Control</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 18px;
+        }
+        .results-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            margin-bottom: 30px;
+        }
+        .results-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0;
+        }
+        .results-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px 40px 20px;
+        }
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+            border: none;
+            font-weight: 600;
+            font-size: 15px;
+        }
+        .glucose-prediction {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+        .glucose-value {
+            font-size: 56px;
+            font-weight: 700;
+            margin: 20px 0;
+        }
+        .glucose-optimal {
+            color: #28a745;
+        }
+        .glucose-warning {
+            color: #ffc107;
+        }
+        .glucose-critical {
+            color: #dc3545;
+        }
+        .clinical-status {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 15px 0;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 15px;
+        }
+        .status-optimal {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-critical {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .metric-item:last-child {
+            border-bottom: none;
+        }
+        .metric-label {
+            font-weight: 600;
+            color: #666;
+        }
+        .metric-value {
+            color: #667eea;
+            font-weight: 700;
+        }
+        .recommendation-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            margin-bottom: 12px;
+        }
+        .alert {
+            border-radius: 8px;
+            border: none;
+        }
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        .btn-custom {
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            text-decoration: none;
+        }
+        .btn-primary-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+            color: white;
+            text-decoration: none;
+        }
+        .btn-secondary-outline {
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+        }
+        .btn-secondary-outline:hover {
+            background: #f8f9ff;
+            text-decoration: none;
+        }
+        .chart-container {
+            margin: 20px 0;
+        }
+        .info-box {
+            background: #f0f7ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .info-box p {
+            margin: 0;
+            color: #156fc5;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('auth.dashboard') }}">💉 Glucose Monitor</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user.predict') }}">New Prediction</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reporting.multi_user_report') }}">Trend Analysis</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.profile') }}">Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Header -->
+    <div class="results-header">
+        <div class="results-container">
+            <h1>🏥 Prediction Results</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Your AI-powered glucose prediction and clinical assessment</p>
+        </div>
+    </div>
+    
+    <div class="results-container">
+        <!-- Glucose Prediction -->
+        <div class="glucose-prediction">
+            <div style="color: #999; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Predicted Glucose Level</div>
+            <div class="glucose-value {% if predicted_glucose >= 100 and predicted_glucose <= 160 %}glucose-optimal{% elif predicted_glucose < 70 or predicted_glucose > 250 %}glucose-critical{% else %}glucose-warning{% endif %}">
+                {{ predicted_glucose }} mg/dL
+            </div>
+            <div class="clinical-status">{{ clinical_status }}</div>
+            
+            {% set risk_lower = risk_level|lower %}
+            {% if risk_lower == 'low' %}
+                <span class="status-badge status-optimal">✓ LOW RISK - Stable</span>
+            {% elif risk_lower == 'moderate' %}
+                <span class="status-badge status-warning">⚠ MODERATE RISK - Monitor</span>
+            {% else %}
+                <span class="status-badge status-critical">⚠ HIGH RISK - Action Needed</span>
+            {% endif %}
+            
+            <div style="color: #666; font-size: 13px; margin-top: 15px;">{{ clinical_recommendation }}</div>
+        </div>
+        
+        <!-- Alerts -->
+        {% if alerts %}
+        <div class="card">
+            <div class="card-header">⚠️ Clinical Alerts</div>
+            <div class="card-body">
+                {% for alert in alerts %}
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <strong>⚠️ Alert:</strong> {{ alert }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Model Performance -->
+        <div class="card">
+            <div class="card-header">📊 Model Performance & Robustness</div>
+            <div class="card-body">
+                <div class="info-box">
+                    <p>These metrics demonstrate the model's accuracy and reliability in making predictions.</p>
+                </div>
+                {% for metric, value in model_metrics.items() %}
+                <div class="metric-item">
+                    <span class="metric-label">{{ metric.replace('_', ' ').title() }}</span>
+                    <span class="metric-value">{{ "%.4f"|format(value) }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Feature Importance -->
+        {% if feature_importance %}
+        <div class="card">
+            <div class="card-header">🔍 Feature Importance</div>
+            <div class="card-body">
+                <p style="color: #666; margin-bottom: 15px;">These clinical features had the most influence on this prediction:</p>
+                {% for feature, importance in feature_importance.items() %}
+                <div class="metric-item">
+                    <span class="metric-label">{{ feature.replace('_', ' ').title() }}</span>
+                    <span class="metric-value">{{ "%.2f"|format(importance) }}%</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Recommendations -->
+        <div class="card">
+            <div class="card-header">💊 Personalized Recommendations</div>
+            <div class="card-body">
+                {% if recommendations %}
+                    {% for recommendation in recommendations %}
+                    <div class="recommendation-item">
+                        {{ recommendation }}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p style="color: #999;">No specific recommendations available.</p>
+                {% endif %}
+                
+                <div class="alert alert-info" style="margin-top: 20px;">
+                    <strong>⚠ Disclaimer:</strong> These recommendations are generated by an AI model and should be reviewed by a qualified healthcare provider before implementation.
+                </div>
+            </div>
+        </div>
+        
+        <!-- Glucose Trend Chart -->
+        {% if plot_html %}
+        <div class="card">
+            <div class="card-header">📈 Glucose Trend</div>
+            <div class="card-body">
+                <div class="chart-container">
+                    {{ plot_html|safe }}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Clinical Summary -->
+        <div class="card">
+            <div class="card-header">📋 Clinical Summary</div>
+            <div class="card-body">
+                <div class="metric-item">
+                    <span class="metric-label">Glucose Level Status</span>
+                    <span class="metric-value">{{ clinical_status }}</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Risk Assessment</span>
+                    <span class="metric-value">{{ risk_level }}</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Recommendation Priority</span>
+                    <span class="metric-value">
+                        {% if risk_level|lower == 'high' %}
+                            <span style="color: #dc3545; font-weight: 700;">URGENT ⚠️</span>
+                        {% elif risk_level|lower == 'moderate' %}
+                            <span style="color: #ffc107; font-weight: 700;">FOLLOW-UP ℹ️</span>
+                        {% else %}
+                            <span style="color: #28a745; font-weight: 700;">STABLE ✓</span>
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <a href="{{ url_for('user.predict') }}" class="btn-custom btn-primary-gradient">
+                ➕ New Prediction
+            </a>
+            <a href="{{ url_for('auth.dashboard') }}" class="btn-custom btn-secondary-outline">
+                ← Back to Dashboard
+            </a>
+        </div>
+        
+        <!-- Footer -->
+        <div style="text-align: center; margin-top: 40px; margin-bottom: 30px; color: #999; font-size: 12px;">
+            <p>💡 <strong>Disclaimer:</strong> This system is for educational and monitoring purposes only. Always consult with healthcare professionals for medical decisions.</p>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
